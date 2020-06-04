@@ -4,10 +4,13 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.util.Log;
 import android.widget.Toast;
 
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 
 public class MainActivity extends AppCompatActivity implements SensorEventListener {
@@ -16,7 +19,10 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private RotationView rotationView;
     private SensorManager manager;
     private Sensor gyroscope;
+    private float rad = 0;
+    private long prevTimestamp;
 
+    @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN_MR1)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -35,6 +41,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         if (gyroscope == null) {
             Toast.makeText(this, R.string.toast_no_gyroscope, Toast.LENGTH_LONG).show();
         }
+        prevTimestamp = SystemClock.elapsedRealtimeNanos();
     }
 
     @Override
@@ -54,8 +61,11 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     @Override
     public void onSensorChanged(SensorEvent event) {
         float omegaZ = event.values[2];  // z-axis angular velocity (rad/sec)
-        // TODO: calculate right direction that cancels the rotation
-        rotationView.setDirection(omegaZ);
+        long ts = event.timestamp;
+        float rate = (float)(ts - prevTimestamp) / 1000000000;
+        prevTimestamp = ts;
+        rad += omegaZ * rate;
+        rotationView.setDirection(rad);
     }
 
     @Override
